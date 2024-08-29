@@ -1,6 +1,5 @@
 from django.db import models
 from django.contrib.auth import get_user_model
-from django.utils.text import slugify
 from django.urls import reverse
 
 from blog.constants import TITLE_LENGTH, TITLE_STR_LENGTH
@@ -76,15 +75,6 @@ class Post(PublishedModel):
         max_length=TITLE_LENGTH,
         verbose_name='Заголовок'
     )
-    slug = models.SlugField(
-        unique=True,
-        blank=True,
-        verbose_name='Идентификатор',
-        help_text=(
-            'Идентификатор страницы для URL; разрешены символы латиницы, '
-            'цифры, дефис и подчёркивание.'
-        ),
-    )
     text = models.TextField(verbose_name='Текст')
     pub_date = models.DateTimeField(
         verbose_name='Дата и время публикации',
@@ -127,22 +117,11 @@ class Post(PublishedModel):
         default_related_name = 'posts'
         ordering = ('-pub_date',)
 
+    def __str__(self):
+        return self.title[:TITLE_STR_LENGTH]
+
     def get_absolute_url(self):
         return reverse('blog:post_detail', kwargs={'post_id': self.id})
-
-    def __str__(self):
-        return self.title
-
-    def save(self, *args, **kwargs):
-        if not self.slug:
-            base_slug = slugify(self.title)
-            slug = base_slug
-            counter = 1
-            while Post.objects.filter(slug=slug).exists():
-                slug = f'{base_slug}-{counter}'
-                counter += 1
-            self.slug = slug
-        super().save(*args, **kwargs)
 
 
 class Comment(PublishedModel):
